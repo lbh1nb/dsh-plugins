@@ -1,0 +1,5 @@
+# dsh-file-explorer bundle patch: mounts the plugin into a profile layer stack.
+# Host half = /_dsh/file-explorer fs route; client half = right-side panel.
+- insert:
+    - id: file-explorer
+      name: 'dsh-file-explorer'

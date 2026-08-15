@@ -1,0 +1,33 @@
+{
+  "name": "dsh-file-explorer",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness web plugin: a collapsible right-side file explorer panel for the current workspace — IDE-grade tree, colored file-type icons, inline preview, create/rename/delete.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "default": "./lib/index.js" },
+    "./client": { "default": "./lib/client.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lbh1nb/dsh-plugins.git",
+    "directory": "packages/dsh-file-explorer"
+  },
+  "keywords": ["deepseek-harness", "dsh", "plugin", "file-explorer", "files", "sidebar", "cordis"]
+}
