@@ -9,8 +9,9 @@ DeepSeek Harness（DSH）实用插件合集 —— 为本地 AI 助手运行时�
 | [dsh-session-archive](./packages/dsh-session-archive) | 会话归档管理：查看归档/全部会话，两步确认永久删除 | 设置页（Settings section） |
 | [dsh-attachment-upload](./packages/dsh-attachment-upload) | 输入框「📎 附件」：上传文件到工作区 `.dsh-attachments\`，路径自动插入草稿 | 输入框工具行左侧 |
 | [dsh-steer-button](./packages/dsh-steer-button) | 输入框「插话」按钮：一键把草稿注入运行中的轮次（steer），中途纠偏不用快捷键 | 输入框工具行右侧 |
+| [dsh-file-explorer](./packages/dsh-file-explorer) | 右侧边文件管理：IDE 级目录树、按类型着色图标、内嵌预览、新建/重命名/删除 | 右侧浮层面板（shell.overlay） |
 
-三个插件均已在生产环境长期运行，并经过真实链路端到端冒烟验证（页面探针 + 功能断言）。
+插件均经真实链路端到端冒烟验证（页面探针 + 功能断言）。
 
 ## 安装
 
