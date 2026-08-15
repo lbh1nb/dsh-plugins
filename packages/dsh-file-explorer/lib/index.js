@@ -82,24 +82,50 @@ export function apply(ctx) {
     return [...rootsCache.values()]
   }
 
-  /** Resolve rel against a root; null when outside or missing. */
-  function safeJoin(rootPath, rel) {
+  /** Resolve rel against a root. Absolute paths (drive letters, /...) are
+   *  allowed, so the panel can browse the whole machine, not just the workspace. */
+  function resolvePath(rootPath, rel) {
     if (typeof rel !== 'string' || rel.includes('\0')) return null
-    const normRoot = path.resolve(rootPath)
-    const abs = path.resolve(normRoot, rel === '' ? '.' : rel)
-    if (abs !== normRoot && !abs.startsWith(normRoot + path.sep)) return null
+    const abs = path.resolve(rootPath, rel === '' ? '.' : rel)
     return abs
   }
 
+  function isRootAbs(root, abs) {
+    return path.resolve(root) === abs
+  }
+
+  async function rootsWithDrives() {
+    const roots = refreshRoots()
+    for (let c = 67; c <= 90; c++) {
+      const letter = String.fromCharCode(c)
+      const drivePath = letter + ':/'
+      try {
+        const st = await fsp.stat(drivePath)
+        if (st.isDirectory()) roots.push({ id: 'drive-' + letter, title: letter + ' 盘', path: drivePath, drive: true })
+      } catch { /* drive not present */ }
+    }
+    return roots
+  }
+
+  async function findRoot(rootId) {
+    let r = rootsCache.get(rootId)
+    if (r === undefined) {
+      const all = await rootsWithDrives()
+      r = all.find((x) => x.id === rootId)
+      if (r !== undefined) rootsCache.set(r.id, r)
+    }
+    return r
+  }
+
   async function doRoots() {
-    return { ok: true, roots: refreshRoots() }
+    return { ok: true, roots: await rootsWithDrives() }
   }
 
   async function doList(body) {
-    const root = rootsCache.get(body?.rootId) ?? refreshRoots().find((r) => r.id === body?.rootId)
-    if (root === undefined) return { ok: false, reason: 'workspace not found' }
-    const abs = safeJoin(root.path, body?.rel ?? '')
-    if (abs === null) return { ok: false, reason: 'path escapes workspace' }
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
+    const abs = resolvePath(root.path, body?.rel ?? '')
+    if (abs === null) return { ok: false, reason: 'invalid path' }
     try {
       const st = await fsp.stat(abs)
       if (!st.isDirectory()) return { ok: false, reason: 'not a directory' }
@@ -132,10 +158,10 @@ export function apply(ctx) {
   }
 
   async function doRead(body) {
-    const root = rootsCache.get(body?.rootId)
-    if (root === undefined) return { ok: false, reason: 'workspace not found' }
-    const abs = safeJoin(root.path, body?.rel)
-    if (abs === null) return { ok: false, reason: 'path escapes workspace' }
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
+    const abs = resolvePath(root.path, body?.rel)
+    if (abs === null) return { ok: false, reason: 'invalid path' }
     let st
     try {
       st = await fsp.stat(abs)
@@ -163,10 +189,10 @@ export function apply(ctx) {
   }
 
   async function doWrite(body) {
-    const root = rootsCache.get(body?.rootId)
-    if (root === undefined) return { ok: false, reason: 'workspace not found' }
-    const abs = safeJoin(root.path, body?.rel)
-    if (abs === null) return { ok: false, reason: 'path escapes workspace' }
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
+    const abs = resolvePath(root.path, body?.rel)
+    if (abs === null) return { ok: false, reason: 'invalid path' }
     if (typeof body?.content !== 'string') return { ok: false, reason: 'content is required' }
     await fsp.mkdir(path.dirname(abs), { recursive: true })
     await fsp.writeFile(abs, body.content, 'utf8')
@@ -174,35 +200,34 @@ export function apply(ctx) {
   }
 
   async function doMkdir(body) {
-    const root = rootsCache.get(body?.rootId)
-    if (root === undefined) return { ok: false, reason: 'workspace not found' }
-    const abs = safeJoin(root.path, body?.rel)
-    if (abs === null) return { ok: false, reason: 'path escapes workspace' }
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
+    const abs = resolvePath(root.path, body?.rel)
+    if (abs === null) return { ok: false, reason: 'invalid path' }
     await fsp.mkdir(abs, { recursive: true })
     return { ok: true, path: abs }
   }
 
   async function doRename(body) {
-    const root = rootsCache.get(body?.rootId)
-    if (root === undefined) return { ok: false, reason: 'workspace not found' }
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
     if (typeof body?.newName !== 'string' || body.newName === '' || /[\\/]/.test(body.newName) || body.newName.includes('\0')) {
       return { ok: false, reason: 'invalid new name' }
     }
-    const abs = safeJoin(root.path, body?.rel)
-    if (abs === null) return { ok: false, reason: 'path escapes workspace' }
-    const next = safeJoin(root.path, path.join(path.dirname(body.rel === '' ? '.' : body.rel), body.newName))
-    if (next === null) return { ok: false, reason: 'target escapes workspace' }
-    if (abs === path.resolve(root.path)) return { ok: false, reason: 'cannot rename workspace root' }
+    const abs = resolvePath(root.path, body?.rel)
+    if (abs === null) return { ok: false, reason: 'invalid path' }
+    const next = path.join(path.dirname(abs), body.newName)
+    if (isRootAbs(root.path, abs)) return { ok: false, reason: 'cannot rename root' }
     await fsp.rename(abs, next)
     return { ok: true, path: next }
   }
 
   async function doDelete(body) {
-    const root = rootsCache.get(body?.rootId)
-    if (root === undefined) return { ok: false, reason: 'workspace not found' }
-    const abs = safeJoin(root.path, body?.rel)
-    if (abs === null) return { ok: false, reason: 'path escapes workspace' }
-    if (abs === path.resolve(root.path)) return { ok: false, reason: 'cannot delete workspace root' }
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
+    const abs = resolvePath(root.path, body?.rel)
+    if (abs === null) return { ok: false, reason: 'invalid path' }
+    if (isRootAbs(root.path, abs)) return { ok: false, reason: 'cannot delete root' }
     const st = await fsp.stat(abs)
     await fsp.rm(abs, { recursive: st.isDirectory(), force: false })
     return { ok: true }
