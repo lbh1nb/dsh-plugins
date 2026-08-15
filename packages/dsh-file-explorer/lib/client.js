@@ -97,16 +97,17 @@ const CSS = `
 .dfe-row .meta { font-size: 10px; color: var(--dsw-alias-label-secondary, #6b7280); flex-shrink: 0; }
 .dfe-chev { width: 12px; height: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-secondary, #6b7280); transition: transform .14s ease; flex-shrink: 0; }
 .dfe-chev.open { transform: rotate(90deg); }
-.dfe-ops { display: none; gap: 2px; flex-shrink: 0; }
-.dfe-row:hover .dfe-ops { display: inline-flex; }
+.dfe-ops { display: none; gap: 3px; flex-shrink: 0; }
+.dfe-row:hover .dfe-ops, .dfe-row.sel .dfe-ops { display: inline-flex; }
 .dfe-op {
-  width: 20px; height: 20px; border: none; border-radius: 5px; background: transparent;
+  width: 22px; height: 22px; border: 1px solid transparent; border-radius: 6px; background: transparent;
   color: var(--dsw-alias-label-secondary, #6b7280); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  transition: background-color .1s ease, color .1s ease;
+  transition: background-color .1s ease, color .1s ease, border-color .1s ease;
 }
 .dfe-op:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.16)); color: var(--dsw-alias-label-primary, #1f2329); }
-.dfe-op.danger:hover { background: rgba(229,83,75,.14); color: var(--dsw-alias-state-error-primary, #e5534b); }
+.dfe-op.rename:hover { background: var(--dsw-alias-brand-primary, #1F4E79); color: #fff; }
+.dfe-op.danger:hover { background: var(--dsw-alias-state-error-primary, #e5534b); color: #fff; }
 .dfe-rename-input { flex: 1; font: inherit; font-size: 12px; padding: 1px 4px; border: 1px solid var(--dsw-alias-brand-primary, #1F4E79); border-radius: 4px; outline: none; background: transparent; color: inherit; }
 .dfe-confirm { display: inline-flex; gap: 4px; align-items: center; flex-shrink: 0; font-size: 11px; color: var(--dsw-alias-state-error-primary, #e5534b); }
 .dfe-confirm button { font-size: 11px; border: 1px solid var(--dsw-alias-border-l1, rgba(127,127,127,.3)); background: transparent; color: inherit; border-radius: 5px; padding: 1px 8px; cursor: pointer; }
@@ -140,6 +141,12 @@ const CSS = `
 }
 .dfe-toast.err { border-color: var(--dsw-alias-state-error-primary, #e5534b); color: var(--dsw-alias-state-error-primary, #e5534b); }
 .dfe-sign { position: absolute; right: 12px; bottom: 7px; font-size: 10px; color: var(--dsw-alias-label-secondary, #6b7280); opacity: .8; pointer-events: none; z-index: 2; }
+.dfe-ctx { position: fixed; z-index: 100; background: var(--dsw-alias-surface-primary, #fafafa); border: 1px solid var(--dsw-alias-border-l1, rgba(127,127,127,.3)); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; min-width: 136px; animation: dfe-in .12s ease; }
+.dfe-ctx-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12.5px; border-radius: 7px; cursor: pointer; color: var(--dsw-alias-label-primary, #1f2329); user-select: none; }
+.dfe-ctx-item:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.12)); }
+.dfe-ctx-item.danger { color: var(--dsw-alias-state-error-primary, #e5534b); }
+.dfe-ctx-item.danger:hover { background: rgba(229,83,75,.12); }
+.dfe-ctx-sep { height: 1px; background: var(--dsw-alias-border-l1, rgba(127,127,127,.18)); margin: 4px 6px; }
 @keyframes dfe-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 `;
 
@@ -218,6 +225,7 @@ function FileExplorer(props) {
   const [editing, setEditing] = react_1.useState(null); // { rel, content }
   const [renaming, setRenaming] = react_1.useState(null); // { rel, name }
   const [confirmDel, setConfirmDel] = react_1.useState(null); // rel
+  const [ctxMenu, setCtxMenu] = react_1.useState(null); // { x, y, rel, name, dir }
   const [toast, setToast] = react_1.useState(null);
   const [showPlaces, setShowPlaces] = react_1.useState(true);
 
@@ -415,7 +423,17 @@ function FileExplorer(props) {
     const isRenaming = renaming !== null && renaming.rel === rel;
     const isConfirm = confirmDel === rel;
     const ind = (rel.match(/\//g) || []).length;
-    return react_1.createElement("div", { key: rel, className: "dfe-row" + (isSel ? " sel" : ""), style: { paddingLeft: 4 + ind * 14 }, onClick: () => onRowClick(entry, rel) },
+    return react_1.createElement("div", {
+      key: rel,
+      className: "dfe-row" + (isSel ? " sel" : ""),
+      style: { paddingLeft: 4 + ind * 14 },
+      onClick: () => onRowClick(entry, rel),
+      onContextMenu: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCtxMenu({ x: e.clientX, y: e.clientY, rel, name: entry.name, dir: entry.dir });
+      },
+    },
       entry.dir
         ? react_1.createElement("span", { className: "dfe-chev" + (expanded[rel] ? " open" : "") }, react_1.createElement(Ic, { d: ICONS.chevron, size: 10 }))
         : react_1.createElement("span", { className: "dfe-chev" }),
@@ -466,7 +484,26 @@ function FileExplorer(props) {
     react_1.createElement("div", { className: "dfe-tab", onClick: () => setOpen(true), title: "打开文件面板" },
       AVATAR_URI.startsWith("data:") ? react_1.createElement("img", { className: "dfe-tab-avatar", src: AVATAR_URI, alt: "" }) : null,
       react_1.createElement("span", { className: "dfe-tab-label" }, "文件")),
-    react_1.createElement("div", { className: "dfe-panel" },
+    ctxMenu !== null
+      ? react_1.createElement("div", {
+          className: "dfe-ctx",
+          style: { left: Math.min(ctxMenu.x, window.innerWidth - 150), top: Math.min(ctxMenu.y, window.innerHeight - 220) },
+          onClick: (e) => e.stopPropagation(),
+        },
+          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { setRenaming({ rel: ctxMenu.rel, name: ctxMenu.name }); setCtxMenu(null); } },
+            react_1.createElement(Ic, { d: ICONS.pencil, size: 12 }), "重命名"),
+          ctxMenu.dir
+            ? react_1.createElement(react_1.Fragment, null,
+                react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { createEntry(ctxMenu.rel, false); setCtxMenu(null); } },
+                  react_1.createElement(Ic, { d: ICONS.filePlus, size: 12 }), "新建文件"),
+                react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { createEntry(ctxMenu.rel, true); setCtxMenu(null); } },
+                  react_1.createElement(Ic, { d: ICONS.folderPlus, size: 12 }), "新建文件夹"))
+            : null,
+          react_1.createElement("div", { className: "dfe-ctx-sep" }),
+          react_1.createElement("div", { className: "dfe-ctx-item danger", onClick: () => { setConfirmDel(ctxMenu.rel); setCtxMenu(null); } },
+            react_1.createElement(Ic, { d: ICONS.trash, size: 12 }), "删除"))
+      : null,
+    react_1.createElement("div", { className: "dfe-panel", onClick: () => { if (ctxMenu !== null) setCtxMenu(null); } },
       react_1.createElement("div", { className: "dfe-header" },
         AVATAR_URI.startsWith("data:") ? react_1.createElement("img", { className: "dfe-head-avatar", src: AVATAR_URI, alt: "" }) : null,
         react_1.createElement("span", { className: "dfe-title", title: currentRoot ? currentRoot.path : "" },
