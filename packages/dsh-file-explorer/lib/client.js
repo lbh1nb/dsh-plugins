@@ -35,21 +35,27 @@ const CSS = `
 .dfe-root.open .dfe-panel { transform: translateX(0); }
 .dfe-tab {
   position: absolute; right: 0; top: 44%;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 8px 5px;
-  font-size: 11px; font-weight: 600;
-  color: var(--dsw-alias-label-secondary, #6b7280);
-  background: var(--dsw-alias-surface-primary, #fafafa);
-  border: 1px solid var(--dsw-alias-border-l1, rgba(127,127,127,.25));
-  border-right: none; border-radius: 10px 0 0 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 9px 6px;
+  font-size: 12px; font-weight: 700;
+  color: var(--dsw-alias-label-primary, #1f2329);
+  background: color-mix(in srgb, #5C807D 10%, var(--dsw-alias-surface-primary, #fafafa));
+  border: 1.5px solid #5C807D;
+  border-right: none; border-radius: 12px 0 0 12px;
   cursor: pointer; pointer-events: auto;
-  box-shadow: -2px 0 8px rgba(0,0,0,.06);
-  transition: color .15s ease, background-color .15s ease, transform .15s ease;
+  box-shadow: -3px 0 12px rgba(63,95,92,.22), 0 2px 8px rgba(0,0,0,.12);
+  transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease;
+  animation: dfe-bob 2.8s ease-in-out infinite;
 }
-.dfe-tab:hover { color: var(--dsw-alias-label-primary, #1f2329); background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.10)); transform: translateX(-2px); }
-.dfe-tab-avatar { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #5C807D; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
-.dfe-tab-label { writing-mode: vertical-rl; letter-spacing: .12em; }
-.dfe-root.open .dfe-tab { opacity: 0; pointer-events: none; }
+.dfe-tab:hover {
+  background: color-mix(in srgb, #5C807D 22%, var(--dsw-alias-surface-primary, #fafafa));
+  transform: translateX(-6px);
+  box-shadow: -6px 0 16px rgba(63,95,92,.3), 0 2px 10px rgba(0,0,0,.15);
+}
+.dfe-tab-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #5C807D; box-shadow: 0 2px 5px rgba(0,0,0,.18); }
+.dfe-tab-label { writing-mode: vertical-rl; letter-spacing: .14em; }
+.dfe-root.open .dfe-tab { opacity: 0; pointer-events: none; animation: none; }
+@keyframes dfe-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .dfe-head-avatar { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #5C807D; flex-shrink: 0; }
 
 .dfe-header { display: flex; align-items: center; gap: 4px; padding: 10px 10px 8px; border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(127,127,127,.25)); }
