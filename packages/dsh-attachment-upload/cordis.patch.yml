@@ -1,0 +1,5 @@
+# dsh-attachment-upload bundle patch: mounts the plugin into a profile layer stack.
+# Host half = lib/index.js (upload route), client half = ./client (composer attach button).
+- insert:
+    - id: attachment-upload
+      name: 'dsh-attachment-upload'

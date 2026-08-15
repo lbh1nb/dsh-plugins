@@ -1,0 +1,33 @@
+{
+  "name": "dsh-steer-button",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness web plugin: a clickable steer button in the composer that sends the current draft into the running turn (mode: steer).",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "default": "./lib/index.js" },
+    "./client": { "default": "./lib/client.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lbh1nb/dsh-plugins.git",
+    "directory": "packages/dsh-steer-button"
+  },
+  "keywords": ["deepseek-harness", "dsh", "plugin", "steer", "composer", "cordis"]
+}

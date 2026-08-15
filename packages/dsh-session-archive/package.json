@@ -1,0 +1,41 @@
+{
+  "name": "dsh-session-archive",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness web plugin: a Settings section to view archived sessions and permanently delete dead conversations.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "default": "./lib/index.js" },
+    "./client": { "default": "./lib/client.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-host-webserver": "^0.0.1",
+    "@deepseek-ai/dsh-session-persistence": "^0.0.1",
+    "@deepseek-ai/dsh-session-query": "^0.0.1",
+    "@deepseek-ai/dsh-subprocess": "^0.0.1",
+    "cordis": "^4.0.0-rc.7",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-host-webserver": { "optional": true }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lbh1nb/dsh-plugins.git",
+    "directory": "packages/dsh-session-archive"
+  },
+  "keywords": ["deepseek-harness", "dsh", "plugin", "session", "archive", "cordis"]
+}

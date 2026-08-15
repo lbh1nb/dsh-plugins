@@ -1,0 +1,5 @@
+# dsh-steer-button bundle patch: mounts the plugin into a profile layer stack.
+# Client half = ./client (composer steer button); host half is a no-op shell.
+- insert:
+    - id: steer-button
+      name: 'dsh-steer-button'

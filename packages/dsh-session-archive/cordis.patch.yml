@@ -1,0 +1,5 @@
+# dsh-session-archive bundle patch: mounts the plugin into a profile layer stack.
+# Host half = lib/index.js (delete route), client half = ./client (Settings section).
+- insert:
+    - id: session-archive
+      name: 'dsh-session-archive'

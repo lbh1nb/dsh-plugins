@@ -1,0 +1,37 @@
+{
+  "name": "dsh-attachment-upload",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness web plugin: an attach button in the composer that uploads files into the current workspace's .dsh-attachments directory and inserts a path reference into the draft.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "default": "./lib/index.js" },
+    "./client": { "default": "./lib/client.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-host-webserver": "^0.0.1",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-host-webserver": { "optional": true }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lbh1nb/dsh-plugins.git",
+    "directory": "packages/dsh-attachment-upload"
+  },
+  "keywords": ["deepseek-harness", "dsh", "plugin", "attachment", "upload", "cordis"]
+}
