@@ -242,12 +242,14 @@ export function apply(ctx) {
     const wantLaunch = body?.mode === 'launch' && !isDir
     let command = null
     let argv = null
-    if (wantLaunch) {
-      try { command = await ctx.subprocess.resolveExecutable('cmd.exe') } catch { /* fall through */ }
-      if (command !== null) argv = [command, '/c', 'start', '', abs]
-    } else {
-      try { command = await ctx.subprocess.resolveExecutable('explorer.exe') } catch { /* fall through */ }
-      if (command !== null) argv = isDir ? [command, abs] : [command, '/select,', abs]
+    try { command = await ctx.subprocess.resolveExecutable('cmd.exe') } catch { /* fall through */ }
+    if (command !== null) {
+      // `start "dsh" <target>` — non-empty window title keeps cmd from
+      // swallowing the first quoted path; explorer /select,<abs> must be ONE
+      // token (a space after the comma breaks the shell verb).
+      if (wantLaunch) argv = [command, '/c', 'start', 'dsh', abs]
+      else if (isDir) argv = [command, '/c', 'start', 'dsh', abs]
+      else argv = [command, '/c', 'start', 'dsh', 'explorer', '/select,' + abs]
     }
     if (argv === null) return { ok: false, reason: 'no shell available to open paths' }
     try {

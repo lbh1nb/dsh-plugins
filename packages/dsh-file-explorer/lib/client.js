@@ -498,10 +498,10 @@ function FileExplorer(props) {
           style: { left: Math.min(ctxMenu.x, window.innerWidth - 150), top: Math.min(ctxMenu.y, window.innerHeight - 240) },
           onClick: (e) => e.stopPropagation(),
         },
-          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: ctxMenu.dir, mode: ctxMenu.dir || ctxMenu.root ? undefined : "launch" }); setCtxMenu(null); } },
+          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: ctxMenu.dir, mode: ctxMenu.dir || ctxMenu.root ? undefined : "launch" }).then((r) => { if (!r || !r.ok) showToast((r && r.reason) || "打开失败", true); }); setCtxMenu(null); } },
             react_1.createElement(Ic, { d: ICONS.panel, size: 12 }), ctxMenu.dir ? "在资源管理器中打开" : "打开文件"),
           !ctxMenu.dir
-            ? react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: false }); setCtxMenu(null); } },
+            ? react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: false }).then((r) => { if (!r || !r.ok) showToast((r && r.reason) || "打开失败", true); }); setCtxMenu(null); } },
                 react_1.createElement(Ic, { d: ICONS.folder, size: 12 }), "打开所在位置")
             : null,
           react_1.createElement("div", { className: "dfe-ctx-sep" }),
