@@ -242,11 +242,13 @@ export function apply(ctx) {
     const wantLaunch = body?.mode === 'launch' && !isDir
     let command = null
     let argv = null
-    // Avoid cmd `start` entirely: its window-title parsing fights DSH argv
-    // quoting (manual quotes produced mangled paths like \D:\...\x.md\).
+    // Empty start title: DSH quotes the empty string as "" for CreateProcess,
+    // and cmd then parses `start "" <path>` correctly (verified locally).
+    // explorer's exit code 1 is its normal "handed to existing instance" and
+    // must not be treated as failure.
     if (wantLaunch) {
-      try { command = await ctx.subprocess.resolveExecutable('rundll32.exe') } catch { /* fall through */ }
-      if (command !== null) argv = [command, 'url.dll,FileProtocolHandler', abs]
+      try { command = await ctx.subprocess.resolveExecutable('cmd.exe') } catch { /* fall through */ }
+      if (command !== null) argv = [command, '/c', 'start', '', abs]
     } else {
       try { command = await ctx.subprocess.resolveExecutable('explorer.exe') } catch { /* fall through */ }
       if (command !== null) argv = isDir ? [command, abs] : [command, '/select,' + abs]
@@ -264,8 +266,12 @@ export function apply(ctx) {
       try {
         if (handle.collected.stderr !== undefined) errText = handle.collected.stderr.readFrom(0).text
       } catch { /* keep empty */ }
+      const isExplorer = !wantLaunch
+      const good = isExplorer
+        ? (outcome.exitCode === 0 || outcome.exitCode === 1) && errText.trim() === ''
+        : outcome.exitCode === 0
       return {
-        ok: outcome.exitCode === 0,
+        ok: good,
         exitCode: outcome.exitCode,
         stderr: errText.slice(0, 300),
         argv: argv.map((a) => String(a)).join(' ').slice(0, 300),
