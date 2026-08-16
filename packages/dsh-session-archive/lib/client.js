@@ -1,4 +1,4 @@
-window.__ModuleLoader__.load({ id: "dsh-session-archive", factory: (require) => {
+window.__ModuleLoader__.load({ id: "@local/dsh-session-archive", factory: (require) => {
 var module = { exports: {} }; var exports = module.exports;
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -14,6 +14,7 @@ const react_1 = require("react");
  */
 
 const DELETE_ROUTE = "/_dsh/session-archive/delete";
+const UNARCHIVE_ROUTE = "/_dsh/session-archive/unarchive";
 
 const hintStyle = { opacity: 0.6, fontSize: 12, lineHeight: 1.6 };
 const errStyle = { color: "#e5534b", fontSize: 12, whiteSpace: "pre-wrap" };
@@ -114,6 +115,29 @@ function ArchivePanel(props) {
     }
   };
 
+  const doUnarchive = async (id) => {
+    setBusyId(id);
+    setError(null);
+    setNotice(null);
+    try {
+      const resp = await fetch(UNARCHIVE_ROUTE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: id }),
+      });
+      const res = await resp.json();
+      if (res && res.ok) {
+        setNotice("已取消归档，会话回到侧栏。");
+      } else {
+        setError((res && res.reason) || "取消归档失败");
+      }
+    } catch (err) {
+      setError(err && err.message ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const tab = (value, label) => react_1.createElement("button", {
     key: value,
     type: "button",
@@ -121,7 +145,7 @@ function ArchivePanel(props) {
     onClick: () => setFilter(value),
   }, label);
 
-  const children = [react_1.createElement("div", { key: "hint", style: hintStyle }, "被「归档」的会话会从侧栏消失，只能在这里找回并删除。切到「全部」可删除任意废弃会话（例如读图失败已坏死的对话）。删除会移除磁盘上的会话日志，不可恢复；被标签页保持打开的会话可删除日志，但需关闭对应标签页后才会从侧栏消失；正在运行（有任务进行中）的会话会被锁定。")];
+  const children = [react_1.createElement("div", { key: "hint", style: hintStyle }, "被「归档」的会话会从侧栏消失，可以在这里「取消归档」找回或永久删除。切到「全部」可删除任意废弃会话（例如读图失败已坏死的对话）。删除会移除磁盘上的会话日志，不可恢复；被标签页保持打开的会话可删除日志，但需关闭对应标签页后才会从侧栏消失；正在运行（有任务进行中）的会话会被锁定。")];
   if (notice !== null) children.push(react_1.createElement("div", { key: "note", style: hintStyle }, notice));
   if (error !== null) children.push(react_1.createElement("div", { key: "err", style: errStyle }, error));
   if (rows.length === 0) {
@@ -141,21 +165,32 @@ function ArchivePanel(props) {
     if (time !== "") subLines.push(time);
     subLines.push(row.id);
 
-    let right;
+    const right = [];
+    // 已归档会话：右下角先放「取消归档」，再放删除/确认删除
+    if (row.archived) {
+      right.push(react_1.createElement("button", {
+        key: "unarc",
+        type: "button",
+        style: busyId === row.id ? btnDisabled : btnBase,
+        disabled: busyId === row.id,
+        title: "把该会话移出归档集合，恢复到侧栏",
+        onClick: () => doUnarchive(row.id),
+      }, busyId === row.id ? "处理中…" : "取消归档"));
+    }
     if (confirmId === row.id) {
-      right = [
+      right.push(
         react_1.createElement("button", { key: "yes", type: "button", style: busyId === row.id ? btnDisabled : btnDanger, disabled: busyId === row.id, onClick: () => doDelete(row.id) }, busyId === row.id ? "删除中…" : "确认删除"),
         react_1.createElement("button", { key: "no", type: "button", style: btnBase, onClick: () => setConfirmId(null) }, "取消"),
-      ];
+      );
     } else {
-      right = [react_1.createElement("button", {
+      right.push(react_1.createElement("button", {
         key: "del",
         type: "button",
         style: locked ? btnDisabled : btnDanger,
         disabled: locked || busyId === row.id,
         title: locked ? (row.isCurrent ? "当前会话不可删除" : "运行中的会话不可删除") : "",
         onClick: () => setConfirmId(row.id),
-      }, "删除")];
+      }, "删除"));
     }
 
     children.push(react_1.createElement("div", { key: row.id, style: rowStyle },

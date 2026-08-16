@@ -119,9 +119,41 @@ export function apply(ctx) {
     }
   }
 
+  /**
+   * 取消归档：把会话 id 从 workspace 域的归档集合中移除。
+   * 产品只提供 workspace.archiveSession（归档），没有 unarchive RPC；
+   * 这里走 registry 的串行化写路径（enqueueOperation + requireState +
+   * setState），与产品自身 archiveSession 的实现方式一致。写库后
+   * domain/changed 会驱动 host/archived-sessions-changed 帧，客户端侧栏
+   * 与设置页自动刷新，无需手动刷新页面。
+   */
+  async function unarchiveSession(sessionId) {
+    if (typeof sessionId !== 'string' || sessionId === '') return { ok: false, reason: 'invalid session id' }
+    const bare = sessionId.startsWith('session-') ? sessionId.slice('session-'.length) : sessionId
+    if (!UUID_RE.test(bare)) return { ok: false, reason: 'invalid session id: ' + sessionId.slice(0, 80) }
+    try {
+      const registry = ctx.get('workspaceRegistry')
+      if (registry === undefined) return { ok: false, reason: 'workspace registry is unavailable' }
+      const outcome = await registry.enqueueOperation(async () => {
+        const state = registry.requireState()
+        if (!state.archivedSessionIds.includes(sessionId)) {
+          return { ok: false, reason: '该会话不在归档列表中（可能已被删除）' }
+        }
+        await registry.setState({
+          ...state,
+          archivedSessionIds: state.archivedSessionIds.filter((id) => id !== sessionId),
+        })
+        return { ok: true }
+      })
+      return outcome
+    } catch (error) {
+      return { ok: false, reason: String(error && error.message ? error.message : error).slice(0, 300) }
+    }
+  }
+
   ctx.inject(['webServer'], (webCtx) => {
     webCtx.effect(() => {
-      const dispose = webCtx.webServer.register({
+      const disposeDelete = webCtx.webServer.register({
         kind: 'exact',
         path: '/_dsh/session-archive/delete',
         handler: async (req, res) => {
@@ -137,7 +169,27 @@ export function apply(ctx) {
           }
         },
       })
-      return () => dispose()
+      return () => disposeDelete()
     }, 'dsh-session-archive: delete route')
+
+    webCtx.effect(() => {
+      const disposeUnarchive = webCtx.webServer.register({
+        kind: 'exact',
+        path: '/_dsh/session-archive/unarchive',
+        handler: async (req, res) => {
+          try {
+            if (!sameOriginPost(req)) return responseJson(res, 403, { ok: false, reason: 'same-origin POST required' })
+            const body = await readJson(req)
+            const sessionId = body && typeof body.sessionId === 'string' ? body.sessionId : ''
+            if (sessionId === '') return responseJson(res, 400, { ok: false, reason: 'sessionId is required' })
+            const result = await unarchiveSession(sessionId)
+            return responseJson(res, result.ok ? 200 : 400, result)
+          } catch (error) {
+            return responseJson(res, 400, { ok: false, reason: String(error && error.message ? error.message : error).slice(0, 300) })
+          }
+        },
+      })
+      return () => disposeUnarchive()
+    }, 'dsh-session-archive: unarchive route')
   })
 }
