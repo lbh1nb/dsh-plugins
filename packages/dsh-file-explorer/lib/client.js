@@ -234,6 +234,13 @@ function FileExplorer(props) {
   const wsState = props.useWorkspaces ? props.useWorkspaces((s) => s) : null;
   const activeWsId = wsState ? wsState.recentWorkspaceId : null;
 
+  react_1.useEffect(() => {
+    try {
+      console.log("[dfe-dbg] props keys:", Object.keys(props || {}).join(","));
+      console.log("[dfe-dbg] wsState:", wsState ? JSON.stringify({ recent: wsState.recentWorkspaceId, items: (wsState.items || []).map(function (i) { return i.workspaceId; }) }) : "NULL");
+    } catch (e) { console.log("[dfe-dbg] err", String(e)); }
+  }, []);
+
   const toastTimer = react_1.useRef(null);
   function showToast(text, err = false) {
     setToast({ text, err });
@@ -498,7 +505,7 @@ function FileExplorer(props) {
           style: { left: Math.min(ctxMenu.x, window.innerWidth - 150), top: Math.min(ctxMenu.y, window.innerHeight - 240) },
           onClick: (e) => e.stopPropagation(),
         },
-          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: ctxMenu.dir, mode: ctxMenu.dir || ctxMenu.root ? undefined : "launch" }).then((r) => { if (!r || !r.ok) showToast((r && r.reason) || "打开失败", true); }); setCtxMenu(null); } },
+          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: ctxMenu.dir, mode: ctxMenu.dir || ctxMenu.root ? undefined : "launch" }).then((r) => { if (!r || !r.ok) showToast("打开失败: " + ((r && (r.stderr || r.reason)) || ("exit " + (r && r.exitCode))) + " | " + ((r && r.argv) || ""), true); }); setCtxMenu(null); } },
             react_1.createElement(Ic, { d: ICONS.panel, size: 12 }), ctxMenu.dir ? "在资源管理器中打开" : "打开文件"),
           !ctxMenu.dir
             ? react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: false }).then((r) => { if (!r || !r.ok) showToast((r && r.reason) || "打开失败", true); }); setCtxMenu(null); } },

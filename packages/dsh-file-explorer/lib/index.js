@@ -253,13 +253,23 @@ export function apply(ctx) {
     }
     if (argv === null) return { ok: false, reason: 'no shell available to open paths' }
     try {
-      ctx.subprocess.spawn({
+      const handle = ctx.subprocess.spawn({
         argv,
         cwd: path.dirname(abs),
         stdio: { stdin: 'ignore', stdout: { maxBytes: 1024 }, stderr: { maxBytes: 1024 } },
-        graceMs: 5000,
+        graceMs: 8000,
       })
-      return { ok: true }
+      const outcome = await handle.done
+      let errText = ''
+      try {
+        if (handle.collected.stderr !== undefined) errText = handle.collected.stderr.readFrom(0).text
+      } catch { /* keep empty */ }
+      return {
+        ok: outcome.exitCode === 0,
+        exitCode: outcome.exitCode,
+        stderr: errText.slice(0, 300),
+        argv: argv.map((a) => String(a)).join(' ').slice(0, 300),
+      }
     } catch (error) {
       return { ok: false, reason: String(error && error.message ? error.message : error).slice(0, 200) }
     }
