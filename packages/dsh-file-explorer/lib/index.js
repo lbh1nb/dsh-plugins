@@ -242,13 +242,14 @@ export function apply(ctx) {
     const wantLaunch = body?.mode === 'launch' && !isDir
     let command = null
     let argv = null
-    // Empty start title: DSH quotes the empty string as "" for CreateProcess,
-    // and cmd then parses `start "" <path>` correctly (verified locally).
+    // `start "dsh" <path>`: quoted non-empty title (no backslashes, so DSH
+    // argv escaping stays clean); the path itself carries no manual quotes and
+    // DSH quotes it only when it contains spaces.
     // explorer's exit code 1 is its normal "handed to existing instance" and
     // must not be treated as failure.
     if (wantLaunch) {
       try { command = await ctx.subprocess.resolveExecutable('cmd.exe') } catch { /* fall through */ }
-      if (command !== null) argv = [command, '/c', 'start', '', abs]
+      if (command !== null) argv = [command, '/c', 'start', '"dsh"', abs]
     } else {
       try { command = await ctx.subprocess.resolveExecutable('explorer.exe') } catch { /* fall through */ }
       if (command !== null) argv = isDir ? [command, abs] : [command, '/select,' + abs]

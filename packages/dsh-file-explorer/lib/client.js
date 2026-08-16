@@ -231,13 +231,18 @@ function FileExplorer(props) {
   const [toast, setToast] = react_1.useState(null);
   const [showPlaces, setShowPlaces] = react_1.useState(true);
 
-  const wsState = props.useWorkspaces ? props.useWorkspaces((s) => s) : null;
-  const activeWsId = wsState ? wsState.recentWorkspaceId : null;
+  const sessState = props.useSessions ? props.useSessions((s) => s) : null;
+  const currentCwd = (function () {
+    if (sessState === null || sessState === undefined) return null;
+    if (!sessState.current) return null;
+    const sum = sessState.byId && sessState.byId[sessState.current];
+    return sum && typeof sum.cwd === 'string' ? sum.cwd : null;
+  })();
 
   react_1.useEffect(() => {
     try {
       console.log("[dfe-dbg] props keys:", Object.keys(props || {}).join(","));
-      console.log("[dfe-dbg] wsState:", wsState ? JSON.stringify({ recent: wsState.recentWorkspaceId, items: (wsState.items || []).map(function (i) { return i.workspaceId; }) }) : "NULL");
+      console.log("[dfe-dbg] currentCwd:", currentCwd === null ? "NULL" : currentCwd);
     } catch (e) { console.log("[dfe-dbg] err", String(e)); }
   }, []);
 
@@ -310,12 +315,18 @@ function FileExplorer(props) {
       react_1.createElement("span", { className: "name" }, ".. 上级目录"));
   }
 
+  function normPath(p) {
+    return String(p).replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  }
+
   react_1.useEffect(() => {
     (async () => {
       const r = await api("roots");
       if (r.ok && Array.isArray(r.roots) && r.roots.length > 0) {
         setRoots(r.roots);
-        const preferred = r.roots.find((x) => x.id === activeWsId)
+        const preferred = (currentCwd !== null && currentCwd !== undefined
+          ? r.roots.find((x) => normPath(x.path) === normPath(currentCwd))
+          : undefined)
           ?? r.roots.find((x) => !x.drive)
           ?? r.roots[0];
         setRootId(preferred.id);
@@ -325,13 +336,13 @@ function FileExplorer(props) {
   }, []);
 
   react_1.useEffect(() => {
-    if (activeWsId === null || activeWsId === undefined) return;
+    if (currentCwd === null || currentCwd === undefined) return;
     setRoots((rs) => {
-      const hit = rs.find((x) => x.id === activeWsId);
+      const hit = rs.find((x) => normPath(x.path) === normPath(currentCwd));
       if (hit !== undefined && rootId !== hit.id) switchRoot(hit.id);
       return rs;
     });
-  }, [activeWsId]);
+  }, [currentCwd]);
 
   react_1.useEffect(() => { if (rootId !== null) loadDirs(Object.keys(expanded)); }, [rootId]);
 
