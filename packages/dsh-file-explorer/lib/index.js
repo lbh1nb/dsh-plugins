@@ -242,14 +242,14 @@ export function apply(ctx) {
     const wantLaunch = body?.mode === 'launch' && !isDir
     let command = null
     let argv = null
-    try { command = await ctx.subprocess.resolveExecutable('cmd.exe') } catch { /* fall through */ }
-    if (command !== null) {
-      // `start "dsh" <target>` — non-empty window title keeps cmd from
-      // swallowing the first quoted path; explorer /select,<abs> must be ONE
-      // token (a space after the comma breaks the shell verb).
-      if (wantLaunch) argv = [command, '/c', 'start', '"dsh"', '"' + abs + '"']
-      else if (isDir) argv = [command, '/c', 'start', '"dsh"', '"' + abs + '"']
-      else argv = [command, '/c', 'start', '"dsh"', 'explorer', '/select,"' + abs + '"']
+    // Avoid cmd `start` entirely: its window-title parsing fights DSH argv
+    // quoting (manual quotes produced mangled paths like \D:\...\x.md\).
+    if (wantLaunch) {
+      try { command = await ctx.subprocess.resolveExecutable('rundll32.exe') } catch { /* fall through */ }
+      if (command !== null) argv = [command, 'url.dll,FileProtocolHandler', abs]
+    } else {
+      try { command = await ctx.subprocess.resolveExecutable('explorer.exe') } catch { /* fall through */ }
+      if (command !== null) argv = isDir ? [command, abs] : [command, '/select,' + abs]
     }
     if (argv === null) return { ok: false, reason: 'no shell available to open paths' }
     try {
