@@ -12,7 +12,7 @@ import { promises as fsp } from 'node:fs'
 import path from 'node:path'
 
 export const name = 'dsh-file-explorer'
-export const inject = ['workspaceRegistry']
+export const inject = ['workspaceRegistry', 'subprocess']
 
 const READ_TEXT_MAX = 256 * 1024
 const READ_BIN_MAX = 2 * 1024 * 1024
@@ -233,6 +233,36 @@ export function apply(ctx) {
     return { ok: true }
   }
 
+  async function doOpen(body) {
+    const root = await findRoot(body?.rootId)
+    if (root === undefined) return { ok: false, reason: 'root not found' }
+    const abs = resolvePath(root.path, body?.rel)
+    if (abs === null) return { ok: false, reason: 'invalid path' }
+    const isDir = body?.dir === true
+    const wantLaunch = body?.mode === 'launch' && !isDir
+    let command = null
+    let argv = null
+    if (wantLaunch) {
+      try { command = await ctx.subprocess.resolveExecutable('cmd.exe') } catch { /* fall through */ }
+      if (command !== null) argv = [command, '/c', 'start', '', abs]
+    } else {
+      try { command = await ctx.subprocess.resolveExecutable('explorer.exe') } catch { /* fall through */ }
+      if (command !== null) argv = isDir ? [command, abs] : [command, '/select,', abs]
+    }
+    if (argv === null) return { ok: false, reason: 'no shell available to open paths' }
+    try {
+      ctx.subprocess.spawn({
+        argv,
+        cwd: path.dirname(abs),
+        stdio: { stdin: 'ignore', stdout: { maxBytes: 1024 }, stderr: { maxBytes: 1024 } },
+        graceMs: 5000,
+      })
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, reason: String(error && error.message ? error.message : error).slice(0, 200) }
+    }
+  }
+
   ctx.inject(['webServer'], (webCtx) => {
     webCtx.effect(() => {
       const dispose = webCtx.webServer.register({
@@ -252,6 +282,7 @@ export function apply(ctx) {
               case 'mkdir': result = await doMkdir(body); break
               case 'rename': result = await doRename(body); break
               case 'delete': result = await doDelete(body); break
+              case 'open': result = await doOpen(body); break
               default: result = { ok: false, reason: 'unknown action: ' + String(action).slice(0, 40) }
             }
             return responseJson(res, result.ok ? 200 : 400, result)

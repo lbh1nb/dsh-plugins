@@ -39,6 +39,8 @@ const CSS = `
 .dfe-places-title { color: var(--dsw-alias-label-primary, #1f2329); }
 .dfe-places-hint { font-size: 10px; font-weight: 400; opacity: .7; }
 .dfe-root.open .dfe-panel { transform: translateX(0); }
+.dfe-backdrop { position: fixed; inset: 0; background: transparent; pointer-events: auto; z-index: 1; }
+.dfe-panel { z-index: 2; }
 .dfe-tab {
   position: absolute; right: 0; top: 44%;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -271,6 +273,11 @@ function FileExplorer(props) {
             key: w.id,
             className: "dfe-row" + (w.id === rootId ? " sel" : ""),
             onClick: () => switchRoot(w.id),
+            onContextMenu: (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCtxMenu({ x: e.clientX, y: e.clientY, rel: "", name: w.title, dir: true, root: true });
+            },
           },
             react_1.createElement("span", { className: "ico", style: { color: w.drive ? "#63c69e" : "#d9a44a" } },
               react_1.createElement(Ic, { d: w.drive ? ICONS.panel : ICONS.folder, size: 13 })),
@@ -481,17 +488,23 @@ function FileExplorer(props) {
   }
 
   return react_1.createElement("div", { className: "dfe-root" + (open ? " open" : "") },
+    open ? react_1.createElement("div", { className: "dfe-backdrop", onClick: () => setOpen(false) }) : null,
     react_1.createElement("div", { className: "dfe-tab", onClick: () => setOpen(true), title: "打开文件面板" },
       AVATAR_URI.startsWith("data:") ? react_1.createElement("img", { className: "dfe-tab-avatar", src: AVATAR_URI, alt: "" }) : null,
       react_1.createElement("span", { className: "dfe-tab-label" }, "文件")),
     ctxMenu !== null
       ? react_1.createElement("div", {
           className: "dfe-ctx",
-          style: { left: Math.min(ctxMenu.x, window.innerWidth - 150), top: Math.min(ctxMenu.y, window.innerHeight - 220) },
+          style: { left: Math.min(ctxMenu.x, window.innerWidth - 150), top: Math.min(ctxMenu.y, window.innerHeight - 240) },
           onClick: (e) => e.stopPropagation(),
         },
-          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { setRenaming({ rel: ctxMenu.rel, name: ctxMenu.name }); setCtxMenu(null); } },
-            react_1.createElement(Ic, { d: ICONS.pencil, size: 12 }), "重命名"),
+          react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: ctxMenu.dir, mode: ctxMenu.dir || ctxMenu.root ? undefined : "launch" }); setCtxMenu(null); } },
+            react_1.createElement(Ic, { d: ICONS.panel, size: 12 }), ctxMenu.dir ? "在资源管理器中打开" : "打开文件"),
+          !ctxMenu.dir
+            ? react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { api("open", { rootId, rel: ctxMenu.rel, dir: false }); setCtxMenu(null); } },
+                react_1.createElement(Ic, { d: ICONS.folder, size: 12 }), "打开所在位置")
+            : null,
+          react_1.createElement("div", { className: "dfe-ctx-sep" }),
           ctxMenu.dir
             ? react_1.createElement(react_1.Fragment, null,
                 react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { createEntry(ctxMenu.rel, false); setCtxMenu(null); } },
@@ -499,9 +512,14 @@ function FileExplorer(props) {
                 react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { createEntry(ctxMenu.rel, true); setCtxMenu(null); } },
                   react_1.createElement(Ic, { d: ICONS.folderPlus, size: 12 }), "新建文件夹"))
             : null,
-          react_1.createElement("div", { className: "dfe-ctx-sep" }),
-          react_1.createElement("div", { className: "dfe-ctx-item danger", onClick: () => { setConfirmDel(ctxMenu.rel); setCtxMenu(null); } },
-            react_1.createElement(Ic, { d: ICONS.trash, size: 12 }), "删除"))
+          !ctxMenu.root
+            ? react_1.createElement(react_1.Fragment, null,
+                react_1.createElement("div", { className: "dfe-ctx-item", onClick: () => { setRenaming({ rel: ctxMenu.rel, name: ctxMenu.name }); setCtxMenu(null); } },
+                  react_1.createElement(Ic, { d: ICONS.pencil, size: 12 }), "重命名"),
+                react_1.createElement("div", { className: "dfe-ctx-sep" }),
+                react_1.createElement("div", { className: "dfe-ctx-item danger", onClick: () => { setConfirmDel(ctxMenu.rel); setCtxMenu(null); } },
+                  react_1.createElement(Ic, { d: ICONS.trash, size: 12 }), "删除"))
+            : null)
       : null,
     react_1.createElement("div", { className: "dfe-panel", onClick: () => { if (ctxMenu !== null) setCtxMenu(null); } },
       react_1.createElement("div", { className: "dfe-header" },
