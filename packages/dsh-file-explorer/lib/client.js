@@ -565,7 +565,7 @@ function apply(ctx) {
   document.head.appendChild(style);
   slots.inject("shell.overlay", () => slots.register(
     { name: "shell.overlay", id: "file-explorer", order: 10, label: "文件" },
-    () => react_1.createElement(FileExplorer),
+    (props) => react_1.createElement(FileExplorer, props),
   ));
   return () => {
     if (style.parentNode) style.parentNode.removeChild(style);

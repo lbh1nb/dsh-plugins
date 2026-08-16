@@ -247,9 +247,9 @@ export function apply(ctx) {
       // `start "dsh" <target>` — non-empty window title keeps cmd from
       // swallowing the first quoted path; explorer /select,<abs> must be ONE
       // token (a space after the comma breaks the shell verb).
-      if (wantLaunch) argv = [command, '/c', 'start', 'dsh', abs]
-      else if (isDir) argv = [command, '/c', 'start', 'dsh', abs]
-      else argv = [command, '/c', 'start', 'dsh', 'explorer', '/select,' + abs]
+      if (wantLaunch) argv = [command, '/c', 'start', '"dsh"', '"' + abs + '"']
+      else if (isDir) argv = [command, '/c', 'start', '"dsh"', '"' + abs + '"']
+      else argv = [command, '/c', 'start', '"dsh"', 'explorer', '/select,"' + abs + '"']
     }
     if (argv === null) return { ok: false, reason: 'no shell available to open paths' }
     try {
