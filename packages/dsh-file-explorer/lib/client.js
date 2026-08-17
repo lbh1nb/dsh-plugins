@@ -143,7 +143,7 @@ const CSS = `
 }
 .dfe-toast.err { border-color: var(--dsw-alias-state-error-primary, #e5534b); color: var(--dsw-alias-state-error-primary, #e5534b); }
 .dfe-sign { position: absolute; right: 12px; bottom: 7px; font-size: 10px; color: var(--dsw-alias-label-secondary, #6b7280); opacity: .8; pointer-events: none; z-index: 2; }
-.dfe-ctx { position: fixed; z-index: 100; background: var(--dsw-alias-surface-primary, #fafafa); border: 1px solid var(--dsw-alias-border-l1, rgba(127,127,127,.3)); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; min-width: 136px; animation: dfe-in .12s ease; }
+.dfe-ctx { position: fixed; z-index: 100; pointer-events: auto; background: var(--dsw-alias-surface-primary, #fafafa); border: 1px solid var(--dsw-alias-border-l1, rgba(127,127,127,.3)); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; min-width: 136px; animation: dfe-in .12s ease; }
 .dfe-ctx-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12.5px; border-radius: 7px; cursor: pointer; color: var(--dsw-alias-label-primary, #1f2329); user-select: none; }
 .dfe-ctx-item:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.12)); }
 .dfe-ctx-item.danger { color: var(--dsw-alias-state-error-primary, #e5534b); }
@@ -506,7 +506,7 @@ function FileExplorer(props) {
   }
 
   return react_1.createElement("div", { className: "dfe-root" + (open ? " open" : "") },
-    open ? react_1.createElement("div", { className: "dfe-backdrop", onClick: () => setOpen(false) }) : null,
+    open ? react_1.createElement("div", { className: "dfe-backdrop", onClick: () => { setOpen(false); setCtxMenu(null); } }) : null,
     react_1.createElement("div", { className: "dfe-tab", onClick: () => setOpen(true), title: "打开文件面板" },
       AVATAR_URI.startsWith("data:") ? react_1.createElement("img", { className: "dfe-tab-avatar", src: AVATAR_URI, alt: "" }) : null,
       react_1.createElement("span", { className: "dfe-tab-label" }, "文件")),
