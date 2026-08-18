@@ -217,7 +217,7 @@ function fmtSize(n) {
 }
 
 function FileExplorer(props) {
-  const [open, setOpen] = react_1.useState(true);
+  const [open, setOpen] = react_1.useState(false);
   const [roots, setRoots] = react_1.useState([]);
   const [rootId, setRootId] = react_1.useState(null);
   const [dirs, setDirs] = react_1.useState({});   // rel -> entries
